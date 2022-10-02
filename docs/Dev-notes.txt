@@ -1,0 +1,9 @@
+Run docker compose and override settings | docker-compose -f .\docker-compose.yml -f .\docker-compose.override.yml up  -d
+Turn off images in local | docker-compose -f docker-compose.yml -f docker-compose.override.yml down
+
+Stop all containers | docker stop $(docker ps -aq)
+Remove all containers | docker rm $(docker ps -aq)
+
+Remove all images | docker rmi $(docker images -q)
+
+Prune all images | docker system prune
