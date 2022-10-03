@@ -7,3 +7,9 @@ Remove all containers | docker rm $(docker ps -aq)
 Remove all images | docker rmi $(docker images -q)
 
 Prune all images | docker system prune
+
+Run redis docker container | docker run -d -p 6379:6379 --nmae aspnetrun-redis redis
+
+Check container log | docker logs -f aspnetrun-redis
+
+
