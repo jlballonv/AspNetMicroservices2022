@@ -13,3 +13,7 @@ Run redis docker container | docker run -d -p 6379:6379 --nmae aspnetrun-redis r
 Check container log | docker logs -f aspnetrun-redis
 
 
+Portainer: admin | PortainerAdmin2022#
+PgAdmin: admin@aspnetrun.com | admin1234
+
+
