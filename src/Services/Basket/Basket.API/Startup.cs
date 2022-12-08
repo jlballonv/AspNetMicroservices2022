@@ -1,6 +1,8 @@
 using Basket.API.GrpcServices;
 using Basket.API.Repositories;
 using Discount.Grpc.Protos;
+using MassTransit;
+using MassTransit.AspNetCoreIntegration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -28,15 +30,47 @@ namespace Basket.API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            //Redis config
             services.AddStackExchangeRedisCache(opt => 
             {
                 opt.Configuration = Configuration.GetValue<string>("CacheSettings:ConnectionString");
             });
 
+            //General config
             services.AddScoped<IBasketRepository, BasketRepository>();
+            services.AddAutoMapper(typeof(Startup));
+            
+            //Grpc Configuration
             services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>
                 (o => o.Address = new Uri(Configuration["GrpcSettings:DiscountUrl"]));
+            
             services.AddScoped<DiscountGrpcService>();
+            
+            //MassTransit config
+            services.AddMassTransit(config =>
+            {
+                config.UsingRabbitMq((ctx, cfg) =>
+                {
+                    cfg.Host(Configuration["EventBusSettings:HostAddress"]);
+                });
+            });
+
+            services.AddOptions<MassTransitHostOptions>().Configure(options =>
+            {
+                // if specified, waits until the bus is started before
+                // returning from IHostedService.StartAsync
+                // default is false
+                options.WaitUntilStarted = true;
+
+                // if specified, limits the wait time when starting the bus
+                options.StartTimeout = TimeSpan.FromSeconds(10);
+
+                // if specified, limits the wait time when stopping the bus
+                options.StopTimeout = TimeSpan.FromSeconds(30);
+            });
+
+            //not required in latest MassTransit verions
+            //services.AddMassTransitHostedService();
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
