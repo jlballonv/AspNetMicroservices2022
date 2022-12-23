@@ -69,7 +69,7 @@ namespace Basket.API
                 options.StopTimeout = TimeSpan.FromSeconds(30);
             });
 
-            //not required in latest MassTransit verions
+            //not required in latest MassTransit versions
             //services.AddMassTransitHostedService();
 
             services.AddControllers();

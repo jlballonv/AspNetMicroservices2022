@@ -1,17 +1,15 @@
+using EventBus.Messages.Common;
+using MassTransit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using Ordering.API.EventBusConsumer;
 using Ordering.Application;
 using Ordering.Infrastructure;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Ordering.API
 {
@@ -28,7 +26,42 @@ namespace Ordering.API
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddApplicationServices();            
-            services.AddInfrastructureServices(Configuration);            
+            services.AddInfrastructureServices(Configuration);
+
+            //MassTransit config
+            services.AddMassTransit(config =>
+            {
+                config.AddConsumer<BasketCheckoutConsumer>();
+                config.UsingRabbitMq((ctx, cfg) =>
+                {
+                    cfg.Host(Configuration["EventBusSettings:HostAddress"]);
+                    cfg.ReceiveEndpoint(EventBusConstants.BasketCheckoutQueue, c =>
+                    {
+                        c.ConfigureConsumer<BasketCheckoutConsumer>(ctx);
+                    });
+                });
+            });
+
+            services.AddOptions<MassTransitHostOptions>().Configure(options =>
+            {
+                // if specified, waits until the bus is started before
+                // returning from IHostedService.StartAsync
+                // default is false
+                options.WaitUntilStarted = true;
+
+                // if specified, limits the wait time when starting the bus
+                options.StartTimeout = TimeSpan.FromSeconds(10);
+
+                // if specified, limits the wait time when stopping the bus
+                options.StopTimeout = TimeSpan.FromSeconds(30);
+            });
+
+            //not required in latest MassTransit versions
+            //services.AddMassTransitHostedService();
+
+            //General configuration
+            services.AddAutoMapper(typeof(Startup));
+            services.AddScoped<BasketCheckoutConsumer>();
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
